@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Computer</title>
+<style>
+  :root {
+    --glass: rgba(255,255,255,.28);
+    --glass-edge: rgba(255,255,255,.65);
+    --sel: rgba(120,180,255,.35);
+    --sel-edge: rgba(255,255,255,.8);
+    --text: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; height: 100dvh; -webkit-tap-highlight-color: transparent; overflow: hidden; font-family: "Segoe UI", Tahoma, Arial, sans-serif; user-select: none; }
+
+  /* Aero-style wallpaper */
+  body {
+    background:
+      radial-gradient(ellipse 60% 40% at 70% 30%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(ellipse 80% 50% at 20% 80%, rgba(0,60,140,.7), transparent 70%),
+      linear-gradient(160deg, #6fc3f0 0%, #1b7fd1 45%, #0a3f8f 100%);
+    background-attachment: fixed;
+  }
+
+  /* ---------- Desktop icons ---------- */
+  #desktop {
+    position: absolute; inset: 0 0 40px 0;
+    padding: 12px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(auto-fill, 96px);
+    grid-auto-columns: 86px;
+    gap: 6px;
+    align-content: start;
+  }
+  .icon {
+    width: 86px; height: 92px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 2px;
+    border: 1px solid transparent; border-radius: 3px;
+    color: var(--text); text-align: center; text-decoration: none;
+    font-size: 12px; line-height: 1.15;
+    text-shadow: 0 1px 3px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.5);
+    cursor: default;
+    transition: background .15s, border-color .15s;
+  }
+  .icon:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); }
+  .icon.selected { background: var(--sel); border-color: var(--sel-edge); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+  .icon span { word-break: break-word; max-width: 80px; }
+  .icon svg { width: 52px; height: 52px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); flex: none; }
+
+  /* ---------- Window ---------- */
+  #overlay { position: absolute; inset: 0 0 40px 0; pointer-events: none; }
+  .win {
+    position: absolute; left: 50%; top: 50%;
+    width: min(820px, 92vw); height: min(520px, 78vh);
+    transform: translate(-50%,-50%) scale(.7); opacity: 0;
+    transform-origin: var(--ox, 50%) var(--oy, 50%);
+    border-radius: 8px 8px 4px 4px;
+    background: var(--glass);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    border: 1px solid var(--glass-edge);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.55), 0 12px 40px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.35);
+    display: none; flex-direction: column; padding: 0 7px 7px;
+    pointer-events: auto;
+  }
+  .win.open { display: flex; animation: winOpen .28s cubic-bezier(.2,.9,.3,1.1) forwards; }
+  .win.closing { display: flex; animation: winClose .18s ease-in forwards; }
+  @keyframes winOpen  { from { opacity:0; transform: translate(-50%,-50%) scale(.7);} to { opacity:1; transform: translate(-50%,-50%) scale(1);} }
+  @keyframes winClose { from { opacity:1; transform: translate(-50%,-50%) scale(1);} to { opacity:0; transform: translate(-50%,-50%) scale(.85);} }
+
+  .titlebar { height: 30px; display: flex; align-items: center; gap: 8px; color: #000; font-size: 12px; text-shadow: 0 0 8px #fff, 0 0 4px #fff; }
+  .titlebar .ttl { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .titlebar svg { width: 16px; height: 16px; }
+  .ctrl { display: flex; margin-top: -8px; }
+  .ctrl button {
+    width: 28px; height: 18px; border: 1px solid rgba(0,0,0,.55); border-top: none;
+    background: linear-gradient(#e8eef7, #b9c7dc 50%, #a3b4cf 50%, #c5d3e8);
+    color: #222; font-size: 11px; cursor: pointer;
+  }
+  .ctrl button:first-child { border-radius: 0 0 0 4px; }
+  .ctrl button.x { width: 46px; border-radius: 0 0 4px 0; color: #fff; text-shadow: 0 0 2px #500; background: linear-gradient(#e9a095, #cf4a38 50%, #b91e0c 50%, #e0614a); }
+  .ctrl button:hover { filter: brightness(1.12); }
+  .ctrl button.x:hover { background: linear-gradient(#f4b3a8, #ec5f4a 50%, #d9301a 50%, #f27a62); }
+
+  .body { flex: 1; display: flex; flex-direction: column; background: #fff; border: 1px solid #6b7c96; min-height: 0; }
+  .toolbar { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: linear-gradient(#fafcff, #e4ecf7); border-bottom: 1px solid #c3cfe0; font-size: 12px; color: #1e395b; }
+  .toolbar .addr { flex: 1; background: #fff; border: 1px solid #9fb0c8; padding: 3px 8px; border-radius: 2px; color: #000; }
+  .toolbar .nav { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #5a7aa8; background: radial-gradient(circle at 35% 30%, #fff, #8fb4e6 60%, #4f7fc0); color: #fff; font-weight: bold; line-height: 20px; text-align: center; opacity: .8; }
+  .content { flex: 1; overflow: auto; padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, 100px); grid-auto-rows: 104px; gap: 8px; align-content: start; }
+  .content .icon { color: #000; text-shadow: none; }
+  .content .icon:hover { background: #e8f2fd; border-color: #b8d6fb; }
+  .content .icon.selected { background: #cde8ff; border-color: #7da2ce; }
+  .status { padding: 4px 10px; font-size: 12px; color: #444; background: linear-gradient(#f6f9fd, #e6edf7); border-top: 1px solid #c3cfe0; }
+
+  /* ---------- Taskbar ---------- */
+  #taskbar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
+    display: flex; align-items: center; gap: 6px; padding: 0 8px 0 6px;
+    background: linear-gradient(rgba(70,110,160,.78), rgba(15,35,70,.9) 50%, rgba(10,25,55,.92));
+    border-top: 1px solid rgba(255,255,255,.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+    backdrop-filter: blur(10px);
+  }
+  .start {
+    width: 46px; height: 46px; margin-top: -6px; border-radius: 50%; border: 1px solid rgba(0,0,0,.6);
+    background: radial-gradient(circle at 50% 30%, #8fe08c, #2d9a2f 55%, #0f6a14);
+    box-shadow: 0 0 8px rgba(120,255,140,.6), inset 0 0 6px rgba(255,255,255,.5);
+    display: grid; place-items: center; cursor: pointer; transition: filter .15s;
+  }
+  .start:hover { filter: brightness(1.2); }
+  .start svg { width: 24px; height: 24px; }
+  .tasks { flex: 1; display: flex; gap: 4px; }
+  .task {
+    min-width: 140px; height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px;
+    color: #fff; font-size: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.5);
+    background: linear-gradient(rgba(255,255,255,.35), rgba(255,255,255,.1) 50%, rgba(255,255,255,.05) 50%, rgba(255,255,255,.2));
+    box-shadow: 0 0 8px rgba(160,210,255,.5); cursor: pointer;
+  }
+  .task svg { width: 16px; height: 16px; }
+  .clock { color: #fff; font-size: 12px; text-align: center; line-height: 1.2; padding: 0 8px; border-left: 1px solid rgba(255,255,255,.25); }
+
+
+  /* ---------- Start menu ---------- */
+  #startMenu {
+    position: absolute; left: 4px; bottom: 42px; width: 380px; max-height: 70vh;
+    display: none; flex-direction: row; border-radius: 8px 8px 4px 4px;
+    background: rgba(40,80,130,.55); backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,.6);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 10px 30px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.25);
+    padding: 6px; gap: 6px; z-index: 50; transform-origin: bottom left;
+  }
+  #startMenu.show { display: flex; animation: menuIn .18s ease-out; }
+  @keyframes menuIn { from { opacity: 0; transform: translateY(14px) scale(.96);} to { opacity: 1; transform: none;} }
+  .sm-left { flex: 1.3; background: #fff; border-radius: 4px; padding: 6px; overflow: auto; border: 1px solid #6b7c96; }
+  .sm-right { flex: 1; padding: 6px 4px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.7); font-size: 13px; }
+  .sm-item {
+    display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 3px; border: 1px solid transparent;
+    font-size: 13px; color: #1b2b44; cursor: pointer;
+  }
+  .sm-item svg { width: 28px; height: 28px; flex: none; }
+  .sm-item:hover { background: linear-gradient(#eef6ff, #cfe5fb); border-color: #a9cbf2; }
+  .sm-right .sm-item { color: #fff; }
+  .sm-right .sm-item:hover { background: rgba(255,255,255,.25); border-color: rgba(255,255,255,.5); }
+  .sm-head { font-size: 11px; color: #6b7c96; padding: 2px 8px 4px; }
+
+
+  /* ---------- Responsive ---------- */
+  #taskbar { padding-bottom: env(safe-area-inset-bottom, 0px); height: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  #desktop, #overlay { bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+  #startMenu { bottom: calc(42px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 8px); }
+  .tasks { overflow: hidden; min-width: 0; }
+  .task { min-width: 0; max-width: 160px; flex: 0 1 160px; overflow: hidden; white-space: nowrap; }
+  .content { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .toolbar .addr { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+  @media (max-width: 700px) {
+    .win { width: calc(100vw - 16px); height: calc(100% - 16px); top: 8px; left: 8px; }
+    @keyframes winOpen  { from { opacity:0; transform: scale(.7);} to { opacity:1; transform: none;} }
+    @keyframes winClose { from { opacity:1; transform: none;} to { opacity:0; transform: scale(.85);} }
+    .win { transform: scale(.7); }
+    .ctrl button { height: 22px; }
+    .content { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); padding: 10px; }
+    .clock { font-size: 11px; padding: 0 6px; }
+  }
+  @media (max-width: 480px) {
+    #desktop { padding: 8px; grid-auto-columns: 78px; grid-template-rows: repeat(auto-fill, 92px); }
+    .icon { width: 78px; }
+    .icon svg { width: 46px; height: 46px; }
+    #startMenu { left: 0; right: 0; width: auto; max-width: none; border-radius: 8px 8px 0 0; flex-direction: column; max-height: 75vh; }
+    .sm-right { display: flex; }
+    .sm-item { padding: 10px 8px; }
+    .task span { display: none; }
+    .task { flex: 0 0 auto; padding: 0 8px; }
+  }
+  @media (max-height: 420px) and (orientation: landscape) {
+    .win { height: calc(100% - 12px); top: 6px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { .win.open, .win.closing { animation-duration: .01s; } }
+</style>
+</head>
+<body>
+
+<!-- SVG icon definitions -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="fBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2b64a"/><stop offset="1" stop-color="#b8861c"/></linearGradient>
+    <linearGradient id="fFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe591"/><stop offset="1" stop-color="#f0bf45"/></linearGradient>
+    <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#dfe6f1"/></linearGradient>
+    <linearGradient id="dk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8dee8"/><stop offset="1" stop-color="#8e9bb0"/></linearGradient>
+    <symbol id="i-folder" viewBox="0 0 64 64">
+      <path d="M4 14a4 4 0 0 1 4-4h14l6 6h28a4 4 0 0 1 4 4v32a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="url(#fBack)" stroke="#8c6411"/>
+      <rect x="9" y="22" width="46" height="26" rx="1" fill="#fff" stroke="#c9cfd9"/>
+      <path d="M4 26a3 3 0 0 1 3-3h50a3 3 0 0 1 3 3l-2 28a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="url(#fFront)" stroke="#b8861c"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 64 64">
+      <path d="M14 4h26l12 12v42a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="url(#pg)" stroke="#7b8aa3"/>
+      <path d="M40 4v12h12" fill="#c9d4e6" stroke="#7b8aa3"/>
+      <path d="M19 28h26M19 35h26M19 42h18" stroke="#8aa0c4" stroke-width="2.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-pc" viewBox="0 0 64 64">
+      <rect x="6" y="8" width="52" height="34" rx="3" fill="url(#dk)" stroke="#59667d"/>
+      <rect x="10" y="12" width="44" height="26" fill="#4aa8f0" stroke="#2b5d96"/>
+      <path d="M10 12h44v10c-14 6-30 6-44 2z" fill="rgba(255,255,255,.35)"/>
+      <path d="M26 42h12l3 8H23z" fill="#9aa7bc" stroke="#59667d"/>
+      <rect x="16" y="50" width="32" height="5" rx="2" fill="url(#dk)" stroke="#59667d"/>
+    </symbol>
+    <symbol id="i-bin" viewBox="0 0 64 64">
+      <path d="M16 18h32l-3 38a3 3 0 0 1-3 3H22a3 3 0 0 1-3-3z" fill="rgba(220,235,255,.8)" stroke="#5f7596" stroke-width="1.5"/>
+      <rect x="12" y="12" width="40" height="6" rx="2" fill="url(#dk)" stroke="#5f7596"/>
+      <path d="M26 24v28M32 24v28M38 24v28" stroke="#8fa6c6" stroke-width="2"/>
+    </symbol>
+    <symbol id="i-drive" viewBox="0 0 64 64">
+      <rect x="6" y="20" width="52" height="26" rx="4" fill="url(#dk)" stroke="#59667d"/>
+      <rect x="11" y="38" width="30" height="3" rx="1.5" fill="#556178"/>
+      <circle cx="49" cy="39" r="3" fill="#5fe06a" stroke="#2a7f31"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Desktop -->
+<main id="desktop" aria-label="Desktop"></main>
+
+<!-- Windows layer -->
+<div id="overlay"></div>
+
+<div id="startMenu"><div class="sm-left" id="smFolders"></div><div class="sm-right" id="smRight"></div></div>
+
+<!-- Taskbar -->
+<footer id="taskbar">
+  <div class="start" title="Start" id="startBtn">
+    <svg viewBox="0 0 24 24"><path d="M2 4.5l8-1.2v8.2H2zM11 3.1L22 1.5v10H11zM2 12.5h8v8.2l-8-1.2zM11 12.5h11v10l-11-1.6z" fill="#fff"/></svg>
+  </div>
+  <div class="tasks" id="tasks"></div>
+  <div class="clock" id="clock"></div>
+</footer>
+
+<script>
+/* ============================================================
+   ADD YOUR FOLDERS HERE (one line each).
+   They appear automatically in:  My PC window + Start menu.
+   onDesktop:true  -> also shows as an icon on the desktop.
+   ============================================================ */
+const FOLDERS = [
+  { name: "UDAIPUR KOTA TRIP", href: "udaipur.html", onDesktop: true },
+  // { name: "Photos", href: "photos.html" },
+  // { name: "Videos", href: "videos.html" },
+];
+
+const desktop = document.getElementById("desktop");
+const overlay = document.getElementById("overlay");
+const tasks   = document.getElementById("tasks");
+const menu    = document.getElementById("startMenu");
+const svg = t => `<svg><use href="#i-${t}"/></svg>`;
+
+/* ---------- Icon factory ---------- */
+function makeIcon(label, type, onOpen) {
+  const a = document.createElement("div");
+  a.className = "icon"; a.tabIndex = 0;
+  a.innerHTML = svg(type) + `<span>${label}</span>`;
+  const touch = () => matchMedia("(pointer: coarse)").matches;
+  a.addEventListener("click", e => { e.stopPropagation(); select(a); if (touch()) onOpen(a); });
+  a.addEventListener("dblclick", () => { if (!touch()) onOpen(a); });
+  a.addEventListener("keydown", e => { if (e.key === "Enter") onOpen(a); });
+  return a;
+}
+function select(el) {
+  el.parentElement.querySelectorAll(".icon.selected").forEach(i => i.classList.remove("selected"));
+  el.classList.add("selected");
+}
+
+/* ---------- Desktop: My PC + pinned folders ---------- */
+desktop.appendChild(makeIcon("My PC", "pc", el => openPC(el)));
+FOLDERS.filter(f => f.onDesktop).forEach(f =>
+  desktop.appendChild(makeIcon(f.name, "folder", el => openFolder(f, el))));
+desktop.addEventListener("mousedown", e => {
+  if (e.target === desktop) desktop.querySelectorAll(".icon.selected").forEach(i => i.classList.remove("selected"));
+});
+
+/* ---------- Windows ---------- */
+function makeWindow(title, type, status, originEl) {
+  const r = originEl.getBoundingClientRect();
+  const win = document.createElement("div");
+  win.className = "win";
+  win.style.setProperty("--ox", (r.left + r.width / 2) + "px");
+  win.style.setProperty("--oy", (r.top + r.height / 2) + "px");
+  win.innerHTML = `
+    <div class="titlebar">${svg(type)}<div class="ttl">${title}</div>
+      <div class="ctrl"><button>&#8211;</button><button>&#9633;</button><button class="x">&#10005;</button></div></div>
+    <div class="body">
+      <div class="toolbar"><div class="nav">&#8592;</div><div class="nav">&#8594;</div><div class="addr">Computer &#9656; ${title}</div></div>
+      <div class="content"></div><div class="status">${status}</div>
+    </div>`;
+  overlay.appendChild(win);
+  const task = document.createElement("div");
+  task.className = "task"; task.innerHTML = svg(type) + "<span>" + title + "</span>";
+  tasks.appendChild(task);
+  win.querySelector(".x").addEventListener("click", () => {
+    clearTimeout(win._go);
+    win.classList.remove("open"); win.classList.add("closing");
+    setTimeout(() => { win.remove(); task.remove(); }, 180);
+  });
+  requestAnimationFrame(() => win.classList.add("open"));
+  return win;
+}
+
+/* My PC: lists every folder, stays on this page */
+function openPC(origin) {
+  closeMenu();
+  const win = makeWindow("My PC", "pc", FOLDERS.length + " folder" + (FOLDERS.length === 1 ? "" : "s"), origin);
+  const box = win.querySelector(".content");
+  if (!FOLDERS.length) box.innerHTML = '<div style="grid-column:1/-1;color:#666;font-size:13px">No folders yet. Add one in the FOLDERS list.</div>';
+  FOLDERS.forEach(f => box.appendChild(makeIcon(f.name, "drive", el => openFolder(f, el))));
+}
+
+/* Folder: open effect, then redirect to its page */
+function openFolder(f, origin) {
+  closeMenu();
+  const win = makeWindow(f.name, "folder", "Opening " + f.name + "…", origin);
+  win._go = setTimeout(() => { window.location.href = f.href; }, 700);
+}
+
+/* ---------- Start menu ---------- */
+const smF = document.getElementById("smFolders");
+smF.innerHTML = '<div class="sm-head">Folders</div>';
+FOLDERS.forEach(f => {
+  const d = document.createElement("div");
+  d.className = "sm-item"; d.innerHTML = svg("folder") + f.name;
+  d.addEventListener("click", () => openFolder(f, document.getElementById("startBtn")));
+  smF.appendChild(d);
+});
+const pcItem = document.createElement("div");
+pcItem.className = "sm-item"; pcItem.innerHTML = svg("pc") + "My PC";
+pcItem.addEventListener("click", () => openPC(document.getElementById("startBtn")));
+document.getElementById("smRight").appendChild(pcItem);
+
+function closeMenu() { menu.classList.remove("show"); }
+document.getElementById("startBtn").addEventListener("click", e => { e.stopPropagation(); menu.classList.toggle("show"); });
+document.addEventListener("click", e => { if (!menu.contains(e.target)) closeMenu(); });
+
+/* ---------- Clock ---------- */
+function tick() {
+  const d = new Date();
+  document.getElementById("clock").innerHTML =
+    d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "<br>" +
+    d.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
+}
+tick(); setInterval(tick, 10000);
+</script>
+</body>
+</html>
