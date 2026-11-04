@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Album Admin</title>
+<style>
+  :root{--glass:rgba(255,255,255,.28);--glass-edge:rgba(255,255,255,.65)}
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%;height:100dvh;overflow:hidden;font:12px/1.4 "Segoe UI",Tahoma,Arial,sans-serif}
+  body{background:
+    radial-gradient(ellipse 60% 40% at 70% 30%,rgba(255,255,255,.55),transparent 60%),
+    radial-gradient(ellipse 80% 50% at 20% 80%,rgba(0,60,140,.7),transparent 70%),
+    linear-gradient(160deg,#6fc3f0 0%,#1b7fd1 45%,#0a3f8f 100%);background-attachment:fixed}
+  .hide{display:none!important}
+
+  /* window chrome (same as index.html) */
+  .win{position:fixed;display:flex;flex-direction:column;padding:0 7px 7px;
+    background:var(--glass);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);
+    border:1px solid var(--glass-edge);box-shadow:0 0 0 1px rgba(0,0,0,.55),0 12px 40px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.35);
+    animation:pop .25s cubic-bezier(.2,.9,.3,1.1)}
+  @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+  /* popup sign-in */
+  .win.small{left:50%;top:50%;width:min(380px,94vw);translate:-50% -50%;border-radius:8px 8px 4px 4px}
+  /* maximized admin window */
+  .win.full{inset:0;border-radius:0;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px));padding-top:env(safe-area-inset-top,0px)}
+  .titlebar{height:30px;display:flex;align-items:center;gap:8px;color:#000;text-shadow:0 0 8px #fff,0 0 4px #fff;flex:none}
+  .titlebar .ttl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .titlebar svg{width:16px;height:16px}
+  .ctrl{display:flex;margin-top:-8px}
+  .ctrl button{width:28px;height:18px;min-width:0;margin:0;padding:0;border:1px solid rgba(0,0,0,.55);border-top:none;border-radius:0;
+    background:linear-gradient(#e8eef7,#b9c7dc 50%,#a3b4cf 50%,#c5d3e8);color:#222;font-size:11px;box-shadow:none;cursor:pointer}
+  .ctrl button:first-child{border-radius:0 0 0 4px}
+  .ctrl button.x{width:46px;border-radius:0 0 4px 0;color:#fff;text-shadow:0 0 2px #500;background:linear-gradient(#e9a095,#cf4a38 50%,#b91e0c 50%,#e0614a)}
+  .ctrl button.x:hover{background:linear-gradient(#f4b3a8,#ec5f4a 50%,#d9301a 50%,#f27a62)}
+  .wbody{flex:1;display:flex;flex-direction:column;background:#fff;border:1px solid #6b7c96;min-height:0}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:5px 8px;background:linear-gradient(#fafcff,#e4ecf7);border-bottom:1px solid #c3cfe0;color:#1e395b;flex:none}
+  .toolbar .addr{flex:1;min-width:0;background:#fff;border:1px solid #9fb0c8;padding:3px 8px;border-radius:2px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav{width:24px;height:24px;border-radius:50%;border:1px solid #5a7aa8;background:radial-gradient(circle at 35% 30%,#fff,#8fb4e6 60%,#4f7fc0);color:#fff;font-weight:bold;line-height:20px;text-align:center;opacity:.8;flex:none}
+  .content{flex:1;overflow:auto;padding:16px;-webkit-overflow-scrolling:touch}
+  .inner{max-width:760px;margin:0 auto}
+  .status{padding:4px 10px;color:#444;background:linear-gradient(#f6f9fd,#e6edf7);border-top:1px solid #c3cfe0;flex:none}
+
+  /* controls */
+  h2{font:400 16px "Segoe UI",sans-serif;color:#1e3a8a;margin:0 0 8px}
+  label{display:block;margin:12px 0 4px}
+  input,textarea{width:100%;padding:4px 6px;font:12px "Segoe UI",Tahoma,sans-serif;background:#fff;border:1px solid #abadb3;border-top-color:#7a7d83;border-radius:2px}
+  input:focus,textarea:focus{outline:0;border-color:#3d7bbd;box-shadow:0 0 3px rgba(61,123,189,.7)}
+  button{font:12px "Segoe UI",Tahoma,sans-serif;color:#000;min-width:75px;padding:4px 14px;margin-top:14px;cursor:pointer;border-radius:3px;
+    border:1px solid #707070;background:linear-gradient(#f2f2f2,#ebebeb 49%,#ddd 50%,#cfcfcf);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8)}
+  button:hover{border-color:#3c7fb1;background:linear-gradient(#eaf6fd,#d9f0fc 49%,#bee6fd 50%,#a7d9f5)}
+  button:active{border-color:#2c628b;background:linear-gradient(#e5f4fc,#c4e5f6 49%,#98d1ef 50%,#68b3db)}
+  button:focus-visible{outline:1px dotted #000;outline-offset:-4px}
+  button.def{border-color:#3c7fb1;box-shadow:inset 0 0 0 1px #8fd0f5}
+  button.sm{margin:0;min-width:0;padding:2px 10px}
+  .tabs{display:flex;gap:2px;padding:0 4px;position:relative;z-index:1}
+  .tabs button{margin:0;min-width:0;padding:4px 16px;border-radius:3px 3px 0 0;border:1px solid #898c95;border-bottom:0;background:linear-gradient(#f6f6f6,#e4e4e4);box-shadow:none}
+  .tabs button.on{background:#fff;padding-bottom:6px;margin-top:-2px;font-weight:600}
+  .pane{border:1px solid #898c95;padding:12px;margin-top:-1px;background:#fff}
+  .drop{border:1px dashed #7a9cc4;background:#f4f9fd;padding:26px;text-align:center;cursor:pointer;color:#33527a}
+  .drop:hover,.drop.over{background:#e3f1fc;border-color:#3d7bbd}
+  .prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px;margin-top:10px}
+  .prev img{width:100%;aspect-ratio:1;object-fit:cover;border:1px solid #aaa;padding:2px;background:#fff}
+  .bar{height:16px;margin-top:14px;border:1px solid #8e8f8f;border-radius:3px;background:linear-gradient(#e6e6e6,#f5f5f5);overflow:hidden;padding:1px}
+  .bar i{display:block;height:100%;width:0;border-radius:2px;transition:width .3s;background:linear-gradient(#b6f2a8,#5ed84a 45%,#1fa80f 50%,#5ed84a)}
+  #msg{margin-top:8px;min-height:16px}
+  .list{border:1px solid #828790;margin-top:6px}
+  .row{display:flex;align-items:center;gap:10px;padding:5px 8px;border-bottom:1px solid #eef0f3}
+  .row:hover{background:linear-gradient(#f8fbfe,#e5f1fb);box-shadow:inset 0 0 0 1px #b8d6fb}
+  .row span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row em{font-style:normal;color:#1e3a8a;margin-right:6px}
+  .empty{padding:12px;color:#666}
+  @media (prefers-reduced-motion:reduce){.win{animation:none}}
+</style>
+</head>
+<body>
+
+<!-- Sign-in popup -->
+<div class="win small" id="login">
+  <div class="titlebar"><div class="ttl">Sign in</div>
+    <div class="ctrl"><button class="x" onclick="goHome()" title="Close">&#10005;</button></div></div>
+  <div class="wbody"><div class="content">
+    <h2>Album Admin</h2>
+    <p>Enter the admin password to continue.</p>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <div style="text-align:right"><button class="def" onclick="login()">OK</button></div>
+    <div id="lm" style="margin-top:8px"></div>
+  </div></div>
+</div>
+
+<!-- Full-screen admin window -->
+<div class="win full hide" id="panel">
+  <div class="titlebar"><div class="ttl">Album Admin</div>
+    <div class="ctrl"><button class="x" onclick="logout()" title="Close and sign out">&#10005;</button></div></div>
+  <div class="wbody">
+    <div class="toolbar"><div class="nav">&#8592;</div><div class="nav">&#8594;</div><div class="addr">Computer &#9656; Album Admin</div></div>
+    <div class="content"><div class="inner">
+      <h2>Add to the album</h2>
+      <div class="tabs"><button class="on" data-t="photo">Photos</button><button data-t="video">Video</button><button data-t="note">Note</button></div>
+      <div class="pane">
+        <div id="t-photo"><label style="margin-top:0">Photos (select many at once)</label>
+          <div class="drop" id="drop"><span id="droptxt">Click or drop images here</span><input id="files" type="file" accept="image/*" multiple hidden></div>
+          <div class="prev" id="pv"></div></div>
+        <div id="t-video" class="hide"><label style="margin-top:0" for="vurl">GitHub video link (.mp4)</label>
+          <input id="vurl" placeholder="https://github.com/user/repo/raw/main/video.mp4"></div>
+        <div id="t-note" class="hide"><label style="margin-top:0" for="ntext">Note</label>
+          <textarea id="ntext" rows="5" placeholder="Write a memory…"></textarea></div>
+        <label for="cap">Caption <span style="color:#777">(photos: applied to all selected)</span></label>
+        <input id="cap" placeholder="Optional caption">
+        <button class="def" onclick="submitIt()">Upload</button>
+        <div class="bar"><i id="bar"></i></div><div id="msg"></div>
+      </div>
+      <h2 style="margin-top:22px">Manage</h2>
+      <div class="list" id="list"><div class="empty">Loading…</div></div>
+    </div></div>
+    <div class="status" id="status">Ready</div>
+  </div>
+</div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbxWBHxyWHOm8fFHqgo13QxEEYGSEGmPBvX5al0lSPrD0PWOeLBns0jbRXH9FiYwVO-4/exec';
+let PW=sessionStorage.getItem('pw')||'',tab='photo',picked=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const post=o=>fetch(API,{method:'POST',body:JSON.stringify({password:PW,...o})}).then(r=>r.json());
+const say=t=>{$('msg').textContent=t;$('status').textContent=t||'Ready'};
+const HOME='index.html';
+const goHome=()=>{
+  let ref='';
+  try{const u=new URL(document.referrer);if(u.origin===location.origin&&!u.pathname.endsWith('admin.html'))ref=u.href}catch(e){}
+  location.replace(ref||HOME);
+};
+
+async function login(){
+  PW=$('pw').value;$('lm').textContent='Checking…';
+  try{const r=await post({action:'check'});if(r.ok){sessionStorage.setItem('pw',PW);open_()}else $('lm').textContent='Error: '+r.error}
+  catch(e){$('lm').textContent='Network error. Check your connection and try again.'}
+}
+function open_(){$('login').classList.add('hide');$('panel').classList.remove('hide');load()}
+function logout(){sessionStorage.removeItem('pw');PW='';goHome()}
+if(PW)post({action:'check'}).then(r=>r.ok&&open_()).catch(()=>{});
+$('pw').addEventListener('keydown',e=>e.key==='Enter'&&login());
+$('pw').focus();
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  ['photo','video','note'].forEach(t=>$('t-'+t).classList.toggle('hide',t!==tab));
+});
+$('drop').onclick=()=>$('files').click();
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');pick(e.dataTransfer.files)};
+$('files').onchange=e=>pick(e.target.files);
+function pick(fl){picked=[...fl].filter(f=>f.type.startsWith('image/'));
+  $('pv').innerHTML='';picked.forEach(f=>{const i=new Image();i.src=URL.createObjectURL(f);$('pv').appendChild(i)});
+  $('droptxt').textContent=picked.length+' image(s) selected';}
+function resize(file,max=1600){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const s=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.85).split(',')[1]);URL.revokeObjectURL(img.src)};img.onerror=()=>rej(new Error('Cannot read '+file.name));img.src=URL.createObjectURL(file)})}
+
+async function submitIt(){
+  const caption=$('cap').value.trim(),place='';
+  try{
+    if(tab==='photo'){
+      if(!picked.length)return say('Select images first');
+      $('bar').style.width='0';
+      for(let i=0;i<picked.length;i++){
+        say(`Uploading ${i+1} of ${picked.length}…`);
+        const data=await resize(picked[i]);
+        const r=await post({action:'upload',place,caption,data,mime:'image/jpeg',name:picked[i].name.replace(/\.\w+$/,'')+'.jpg'});
+        if(!r.ok)throw new Error(r.error);
+        $('bar').style.width=((i+1)/picked.length*100)+'%';
+      }
+      picked=[];$('pv').innerHTML='';$('droptxt').textContent='Click or drop images here';
+    }else if(tab==='video'){
+      const url=$('vurl').value.trim();if(!url)return say('Paste a video link');
+      const r=await post({action:'video',place,caption,url});if(!r.ok)throw new Error(r.error);$('vurl').value='';
+    }else{
+      const text=$('ntext').value.trim();if(!text)return say('Write a note');
+      const r=await post({action:'note',place,caption,text});if(!r.ok)throw new Error(r.error);$('ntext').value='';
+    }
+    say('Added to the album.');$('cap').value='';load();
+  }catch(e){say('Error: '+e.message)}
+}
+async function load(){
+  try{
+    const d=await fetch(API).then(r=>r.json());
+    $('list').innerHTML=d.items.length?d.items.map(i=>`<div class="row"><span><em>${esc(i.type)}</em>${esc((i.caption||i.value||'').toString().slice(0,60))}</span><button class="sm" onclick="del('${esc(i.id)}')">Delete</button></div>`).join(''):'<div class="empty">Nothing yet. Upload a photo, video or note above.</div>';
+  }catch(e){$('list').innerHTML='<div class="empty">Could not load items.</div>'}
+}
+async function del(id){if(!confirm('Delete this item?'))return;const r=await post({action:'delete',id});r.ok?load():alert(r.error)}
+</script>
+</body>
+</html>
