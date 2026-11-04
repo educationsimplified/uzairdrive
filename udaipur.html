@@ -295,6 +295,13 @@ addEventListener('keydown',e=>{
   if(e.key==='Escape')closeD();if(o&&e.key==='ArrowRight')stp(1);if(o&&e.key==='ArrowLeft')stp(-1)
 });
 
+ /* Admin button -> opens admin.html */
+const adminBtn = document.createElement('button');
+adminBtn.textContent = 'Admin';
+adminBtn.onclick = () => { location.href = 'admin.html'; };
+document.querySelector('.cmd').appendChild(adminBtn);
+
+ 
 function load(){$('st').textContent='Loading…';fetch(API).then(r=>r.json()).then(d=>{ITEMS=d.items||[];draw()}).catch(()=>{$('files').innerHTML='<div class="empty">Could not load the drive. Check your connection and press Refresh.</div>';$('st').textContent='Error'})}
 draw();load();
 </script></body></html>
