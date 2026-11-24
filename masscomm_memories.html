@@ -134,7 +134,7 @@ body{padding:0 env(safe-area-inset-right,0px) calc(40px + env(safe-area-inset-bo
 <div id="ov"></div>
 
 <div id="zv">
- <div class="zbar"><span id="zn"></span><button onclick="zNav(-1)" title="Previous">&#8249;</button><button onclick="zNav(1)" title="Next">&#8250;</button><button onclick="zb(1/1.4)" title="Zoom out">&#8722;</button><b id="zp">100%</b><button onclick="zb(1.4)" title="Zoom in">+</button><button onclick="fitZ()" title="Fit to screen">Fit</button><button class="zx" onclick="closeZ()" title="Close">&#10005;</button></div>
+ <div class="zbar"><span id="zn"></span><button onclick="zNav(-1)" title="Previous">&#8249;</button><button onclick="zNav(1)" title="Next">&#8250;</button><button onclick="zb(1/1.4)" title="Zoom out">&#8722;</button><b id="zp">100%</b><button onclick="zb(1.4)" title="Zoom in">+</button><button onclick="fitZ()" title="Fit to screen">Fit</button><button onclick="dlItem()" title="Download original">&#11015; Download</button><button class="zx" onclick="closeZ()" title="Close">&#10005;</button></div>
  <div id="zs"><div class="ld" id="zl"><i></i><em>Loading photo…</em></div><img id="zi" alt=""></div>
  <div class="zhint">Scroll or pinch to zoom · drag to move · double-click to zoom in/out</div>
 </div>
@@ -149,6 +149,8 @@ const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const thumb=(id,w)=>`https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
 const vurl=u=>String(u).replace('/blob/','/raw/');
 const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/);return m?m[1]:''};
+const dlUrl=id=>`https://drive.google.com/uc?export=download&id=${id}`;
+function dlItem(){const it=list[cur];if(!it||it.type!=='photo')return;const a=document.createElement('a');a.href=dlUrl(it.fileId);a.download='';document.body.appendChild(a);a.click();a.remove()}
 const ytThumb=u=>`https://img.youtube.com/vi/${ytId(u)}/hqdefault.jpg`;
 let ITEMS=[],FOLDS=[],path=null,hist=[],fwd=[],view='icons',query='',list=[];
 
@@ -220,7 +222,7 @@ function show(){
   else{body=esc(it.value);cls+=' note'}
   const multi=list.length>1;
   ov.innerHTML=`<div class="dlg${first?' pop':''}"><div class="tb">${ic(icoOf(it))}<div class="t">${esc(name)} - ${it.type==='note'?'Notepad':it.type==='photo'?'Photo Viewer':'Media Player'}</div><div class="ctrl"><button class="x" onclick="closeD()">&#10005;</button></div></div><div class="${cls}">${body}</div>
-  <div class="foot">${multi?'<button onclick="stp(-1)">&#8249; Prev</button>':''}<span>${it.caption&&it.type!=='note'?esc(it.caption):''} &nbsp; ${cur+1} / ${list.length}</span>${it.type==='photo'?'<button onclick="openZoom()">&#10530; Zoom</button>':''}${multi?'<button onclick="stp(1)">Next &#8250;</button>':''}<button onclick="closeD()">Close</button></div></div>`;
+  <div class="foot">${multi?'<button onclick="stp(-1)">&#8249; Prev</button>':''}<span>${it.caption&&it.type!=='note'?esc(it.caption):''} &nbsp; ${cur+1} / ${list.length}</span>${it.type==='photo'?'<button onclick="openZoom()">&#10530; Zoom</button><button onclick="dlItem()" title="Download original quality">&#11015; Download</button>':''}${multi?'<button onclick="stp(1)">Next &#8250;</button>':''}<button onclick="closeD()">Close</button></div></div>`;
   /* double-tap on touch screens */
   const pv=$('pv');
   if(pv){let t=0;pv.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')return;const n=Date.now();if(n-t<350){t=0;openZoom()}else t=n})}
